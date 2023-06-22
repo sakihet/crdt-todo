@@ -1,30 +1,69 @@
 <script setup lang="ts">
 import * as Automerge from '@automerge/automerge'
-import { ref } from 'vue'
+import { io } from 'socket.io-client'
+import { onUpdated, reactive, ref } from 'vue'
 
-let doc = Automerge.init()
-doc = Automerge.change(doc, 'add task', d => {
+const newTaskName = ref("")
+const state = reactive({
+  connected: false,
+  tasks: []
+})
+const url = 'ws://localhost:5000'
+const socket = io(url)
+
+// setup initial data
+let currentDoc = Automerge.init()
+currentDoc = Automerge.change(currentDoc, 'add task', d => {
   d.tasks = []
   d.tasks.push({ id: '6db3a402-4e8a-4604-a421-55695673f76a', name: 'task 1', done: false })
   d.tasks.push({ id: '7cc7dd32-53e9-4602-a576-00d6bbf90257', name: 'task 2', done: true })
 })
-console.log(doc)
+state.tasks = currentDoc.tasks
 
-const newTaskName = ref("")
+// socket section
+socket.on('connect', () => {
+  state.connected = true
+  console.log('socket connect')
+})
+socket.on('disconnect', () => {
+  state.connected = false
+  console.log('socket disconnect')
+})
+socket.on('message', (data) => {
+  console.log('socket message', data)
+})
+socket.on('updates', (changes) => {
+  console.log('socket updates', changes, Automerge.load(changes))
+  const ary = new Uint8Array(changes)
+  currentDoc = Automerge.merge(currentDoc, Automerge.load(ary))
+  state.tasks = currentDoc.tasks
+})
+
+onUpdated(() => {
+  console.log('updated')
+})
+
 const handleCheck = (id: string) => {
   console.log('check', id)
   // TODO
+  socket.send('check')
 }
 const handleDelete = (id: string) => {
   console.log('delete', id)
   // TODO
+  socket.send('delete')
 }
-const handleSubmit = () => {
+const handleSubmit = async () => {
   console.log('submit', newTaskName.value)
-  doc = Automerge.change(doc, 'add task', d => {
-    // TODO
-    d.tasks.push({ id: '95f6b946-790d-4bb3-bf3a-d4fb543c9b39', name: newTaskName.value, done: false })
+  // TODO
+  const newTask = { id: '95f6b946-790d-4bb3-bf3a-d4fb543c9b39', name: newTaskName.value, done: false }
+  let newDoc = Automerge.init()
+  newDoc = Automerge.change(currentDoc, d => {
+    d.tasks.push(newTask)
   })
+  currentDoc = newDoc
+  const binary = Automerge.save(newDoc)
+  socket.send(binary)
   newTaskName.value = ''
 }
 </script>
@@ -32,6 +71,9 @@ const handleSubmit = () => {
 <template>
   <div>
     <h1>CRDT TODO</h1>
+    <div>socket connected: {{ state.connected }}</div>
+    <!-- <div>{{ state.tasks }}</div> -->
+    <hr />
     <div>
       <form @submit.prevent="handleSubmit">
         <input
@@ -40,7 +82,7 @@ const handleSubmit = () => {
         />
       </form>
       <div>
-        <ul v-for="t in doc.tasks">
+        <ul v-for="t in state.tasks">
           <li>
             <div>
               <input

@@ -40,18 +40,31 @@ socket.on('updates', (changes) => {
 })
 
 onUpdated(() => {
-  console.log('updated')
+  console.log('on updated')
 })
 
 const handleCheck = (id: string) => {
   console.log('check', id)
-  // TODO
-  socket.send('check')
+  let newDoc = Automerge.init()
+  const idx = currentDoc.tasks.findIndex(x => x.id == id)
+  newDoc = Automerge.change(currentDoc, d => {
+    const task = d.tasks[idx]
+    d.tasks[idx] = {...task, done: !task.done}
+  })
+  currentDoc = newDoc
+  const binary = Automerge.save(currentDoc)
+  socket.send(binary)
 }
 const handleDelete = (id: string) => {
   console.log('delete', id)
-  // TODO
-  socket.send('delete')
+  let newDoc = Automerge.init()
+  const idx = currentDoc.tasks.findIndex(x => x.id == id)
+  newDoc = Automerge.change(currentDoc, d => {
+    d.tasks.deleteAt(idx)
+  })
+  currentDoc = newDoc
+  const binary = Automerge.save(currentDoc)
+  socket.send(binary)
 }
 const handleSubmit = async () => {
   console.log('submit', newTaskName.value)

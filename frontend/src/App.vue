@@ -55,8 +55,8 @@ const handleDelete = (id: string) => {
 }
 const handleSubmit = async () => {
   console.log('submit', newTaskName.value)
-  // TODO
-  const newTask = { id: '95f6b946-790d-4bb3-bf3a-d4fb543c9b39', name: newTaskName.value, done: false }
+  const uuid = crypto.randomUUID()
+  const newTask = { id: uuid, name: newTaskName.value, done: false }
   let newDoc = Automerge.init()
   newDoc = Automerge.change(currentDoc, d => {
     d.tasks.push(newTask)
@@ -82,8 +82,8 @@ const handleSubmit = async () => {
         />
       </form>
       <div>
-        <ul v-for="t in state.tasks">
-          <li>
+        <ul>
+          <li v-for="t in state.tasks" :key="t.id">
             <div>
               <input
                 type="checkbox"

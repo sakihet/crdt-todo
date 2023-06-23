@@ -53,7 +53,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div>
+  <div class="layout-center">
     <h1>CRDT TODO</h1>
     <div>socket connected: {{ store.connected }}</div>
     <div>
@@ -64,7 +64,7 @@ const handleSubmit = async () => {
         />
       </form>
       <div>
-        <ul>
+        <ul class="list-style-none p-0">
           <li v-for="t in store.tasks" :key="t.id">
             <div>
               <input

@@ -15,13 +15,10 @@ socket.on('updates', (changes) => {
 // setup initial data
 currentDoc = Automerge.change(currentDoc, 'add task', d => {
   d.tasks = []
-  d.tasks.push({ id: '6db3a402-4e8a-4604-a421-55695673f76a', name: 'task 1', done: false })
-  d.tasks.push({ id: '7cc7dd32-53e9-4602-a576-00d6bbf90257', name: 'task 2', done: true })
 })
 store.tasks = currentDoc.tasks
 
 const handleCheck = (id: string) => {
-  console.log('check', id)
   let newDoc = Automerge.init()
   const idx = currentDoc.tasks.findIndex(x => x.id == id)
   newDoc = Automerge.change(currentDoc, d => {
@@ -33,7 +30,6 @@ const handleCheck = (id: string) => {
   socket.send(binary)
 }
 const handleDelete = (id: string) => {
-  console.log('delete', id)
   let newDoc = Automerge.init()
   const idx = currentDoc.tasks.findIndex(x => x.id == id)
   newDoc = Automerge.change(currentDoc, d => {
@@ -44,15 +40,12 @@ const handleDelete = (id: string) => {
   socket.send(binary)
 }
 const handleSubmit = async () => {
-  console.log('submit', store.newTaskName)
-  const uuid = crypto.randomUUID()
-  const newTask = { id: uuid, name: store.newTaskName, done: false }
+  const newTask = { id: crypto.randomUUID(), name: store.newTaskName, done: false }
   let newDoc = Automerge.init()
   newDoc = Automerge.change(currentDoc, d => {
     d.tasks.push(newTask)
   })
   currentDoc = newDoc
-  store.tasks = currentDoc.tasks
   const binary = Automerge.save(newDoc)
   socket.send(binary)
   store.newTaskName = ''
@@ -63,8 +56,6 @@ const handleSubmit = async () => {
   <div>
     <h1>CRDT TODO</h1>
     <div>socket connected: {{ store.connected }}</div>
-    <!-- <div>{{ state.tasks }}</div> -->
-    <hr />
     <div>
       <form @submit.prevent="handleSubmit">
         <input
